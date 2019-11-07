@@ -30,9 +30,12 @@ class Matrix {
     data_->insert_or_assign(_key, x);
   }
 
-  auto get(const Key& key) const -> double {
+  auto get(const Key& key, const bool filter = false) const -> double {
     const auto& _key = ji_ ? Matrix::swap_key(key) : key;
     if (data_->count(_key) == 0) {
+      if (filter) {
+        return std::numeric_limits<double>::quiet_NaN();
+      }
       auto i = std::get<0>(_key);
       if (i > i_) {
         throw pybind11::index_error("index " + std::to_string(i) +
@@ -62,9 +65,7 @@ class Matrix {
     return std::make_tuple(i_ + 1, j_ + 1);
   }
 
-  auto transpose() -> void {
-    ji_ = ! ji_;
-  }
+  auto transpose() -> void { ji_ = !ji_; }
 
  private:
   static auto swap_key(const Key& key) -> Key {

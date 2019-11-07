@@ -122,6 +122,44 @@ PYBIND11_MODULE(core, m) {
             }
           },
           py::arg("i"), py::arg("j"), py::arg("x"))
+      .def("get",
+           [](const Matrix& self, const py::tuple& slices) -> py::tuple {
+             size_t i_start, i_stop, i_step, i_slicelength;
+             size_t j_start, j_stop, j_step, j_slicelength;
+             auto shape = self.shape();
+
+             std::tie(i_start, i_stop, i_step, i_slicelength, j_start, j_stop,
+                      j_step, j_slicelength) = parse_tuple(shape, slices);
+
+             auto result_shape =
+                 py::array::ShapeContainer({i_slicelength * j_slicelength});
+             auto i = py::array_t<uint32_t>(result_shape);
+             auto j = py::array_t<uint32_t>(result_shape);
+             auto x = py::array_t<double>(result_shape);
+             auto _i = i.mutable_unchecked<1>();
+             auto _j = j.mutable_unchecked<1>();
+             auto _x = x.mutable_unchecked<1>();
+             auto k = 0ULL;
+
+             for (size_t ix = 0; ix < i_slicelength; ++ix) {
+               auto start = j_start;
+               for (size_t jx = 0; jx < j_slicelength; ++jx) {
+                 auto data = self.get({i_start, start}, true);
+                 if (!std::isnan(data)) {
+                   _i(k) = i_start;
+                   _j(k) = start;
+                   _x(k) = data;
+                   ++k;
+                 }
+                 start += j_step;
+               }
+               i_start += i_step;
+             }
+             i.resize({k});
+             j.resize({k});
+             x.resize({k});
+             return py::make_tuple(i, j, x);
+           })
       .def("__setitem__",
            [](Matrix& self, const py::tuple& slices,
               py::array_t<double>& x) -> void {
