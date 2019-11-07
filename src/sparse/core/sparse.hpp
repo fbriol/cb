@@ -1,8 +1,9 @@
 #include <boost/functional/hash.hpp>
-#include <unordered_map>
-#include <tuple>
 #include <memory>
+#include <pybind11/pybind11.h>
 #include <string>
+#include <tuple>
+#include <unordered_map>
 
 namespace std {
 
@@ -34,15 +35,17 @@ class Matrix {
     if (data_->count(_key) == 0) {
       auto i = std::get<0>(_key);
       if (i > i_) {
-        throw std::range_error(
-            "index " + std::to_string(i) + " is out of bounds for axis " +
-            std::to_string(ji_ ? 1 : 0) + " with size " + std::to_string(i_));
+        throw pybind11::index_error("index " + std::to_string(i) +
+                                    " is out of bounds for axis " +
+                                    std::to_string(ji_ ? 1 : 0) +
+                                    " with size " + std::to_string(i_ + 1));
       }
       auto j = std::get<1>(_key);
       if (j > j_) {
-        throw std::range_error(
-            "index " + std::to_string(j) + " is out of bounds for axis " +
-            std::to_string(ji_ ? 0 : 1) + " with size " + std::to_string(j_));
+        throw pybind11::index_error("index " + std::to_string(j) +
+                                    " is out of bounds for axis " +
+                                    std::to_string(ji_ ? 0 : 1) +
+                                    " with size " + std::to_string(j_ + 1));
       }
       return 0;
     }

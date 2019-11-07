@@ -64,11 +64,48 @@ void check_ndarray_shape(const std::string& name1, const Array1& a1,
   check_ndarray_shape(name1, a1, args...);
 }
 
+auto parse_tuple(const Matrix::Key& shape, const py::tuple& slices)
+    -> std::tuple<size_t, size_t, size_t, size_t, size_t, size_t, size_t,
+                  size_t> {
+  if (slices.size() != 2) {
+    throw std::invalid_argument("number of indices must be equal to 2");
+  }
+  size_t i_start, i_stop, i_step, i_slicelength;
+  size_t j_start, j_stop, j_step, j_slicelength;
+  try {
+    auto index = slices[0].cast<uint32_t>();
+    i_start = index;
+    i_stop = index;
+    i_step = 1;
+    i_slicelength = 1;
+  } catch (py::cast_error) {
+    if (!slices[0].cast<py::slice>().compute(
+            std::get<0>(shape), &i_start, &i_stop, &i_step, &i_slicelength)) {
+      throw py::error_already_set();
+    }
+  }
+
+  try {
+    auto index = slices[1].cast<uint32_t>();
+    j_start = index;
+    j_stop = index;
+    j_step = 1;
+    j_slicelength = 1;
+  } catch (py::cast_error) {
+    if (!slices[1].cast<py::slice>().compute(
+            std::get<1>(shape), &j_start, &j_stop, &j_step, &j_slicelength)) {
+      throw py::error_already_set();
+    }
+  }
+
+  return std::make_tuple(i_start, i_stop, i_step, i_slicelength, j_start,
+                         j_stop, j_step, j_slicelength);
+}
+
 PYBIND11_MODULE(core, m) {
   py::class_<Matrix>(m, "Matrix")
       .def(py::init<>())
       .def("shape", &Matrix::shape)
-      .def("get", &Matrix::get, py::arg("key"))
       .def(
           "set",
           [](Matrix& self, py::array_t<uint32_t> i, py::array_t<uint32_t> j,
@@ -80,7 +117,6 @@ PYBIND11_MODULE(core, m) {
             auto _x = x.unchecked<1>();
 
             for (auto ix = 0; ix < x.size(); ++ix) {
-              std::cout << _x[ix] << std::endl;
               self.set({_i[ix], _j[ix]}, _x[ix]);
             }
           },
@@ -88,25 +124,12 @@ PYBIND11_MODULE(core, m) {
       .def("__setitem__",
            [](Matrix& self, const py::tuple& slices,
               py::array_t<double>& x) -> void {
-             if (slices.size() != 2) {
-               throw std::invalid_argument(
-                   "number of indices must be equal to 2");
-             }
              size_t i_start, i_stop, i_step, i_slicelength;
              size_t j_start, j_stop, j_step, j_slicelength;
              auto shape = self.shape();
 
-             if (!slices[0].cast<py::slice>().compute(
-                     std::get<0>(shape), &i_start, &i_stop, &i_step,
-                     &i_slicelength)) {
-               throw py::error_already_set();
-             }
-
-             if (!slices[1].cast<py::slice>().compute(
-                     std::get<1>(shape), &j_start, &j_stop, &j_step,
-                     &j_slicelength)) {
-               throw py::error_already_set();
-             }
+             std::tie(i_start, i_stop, i_step, i_slicelength, j_start, j_stop,
+                      j_step, j_slicelength) = parse_tuple(shape, slices);
 
              if (x.ndim() != 2 ||
                  static_cast<size_t>(x.shape(0)) != i_slicelength ||
@@ -132,37 +155,13 @@ PYBIND11_MODULE(core, m) {
       .def("__getitem__",
            [](const Matrix& self,
               const py::tuple& slices) -> py::array_t<double> {
-             if (slices.size() != 2) {
-               throw std::invalid_argument(
-                   "number of indices must be equal to 2");
-             }
              size_t i_start, i_stop, i_step, i_slicelength;
              size_t j_start, j_stop, j_step, j_slicelength;
-             std::cout << __LINE__ << std::endl;
              auto shape = self.shape();
 
-             std::cout << __LINE__ << std::endl;
-             auto i_slice = slices[0].cast<uint32_t>();
+             std::tie(i_start, i_stop, i_step, i_slicelength, j_start, j_stop,
+                      j_step, j_slicelength) = parse_tuple(shape, slices);
 
-
-             std::cout << __LINE__ << std::endl;
-             if (!slices[0].cast<py::slice>().compute(
-                     std::get<0>(shape), &i_start, &i_stop, &i_step,
-                     &i_slicelength)) {
-               throw py::error_already_set();
-             }
-
-             std::cout << __LINE__ << std::endl;
-             if (!slices[1].cast<py::slice>().compute(
-                     std::get<1>(shape), &j_start, &j_stop, &j_step,
-                     &j_slicelength)) {
-               throw py::error_already_set();
-             }
-             std::cout << __LINE__ << std::endl;
-             std::cout << i_start << "," << i_stop << "," << i_step << ","
-                       << i_slicelength << std::endl;
-             std::cout << j_start << "," << j_stop << "," << j_step << ","
-                       << j_slicelength << std::endl;
              auto x = py::array_t<double>({i_slicelength, j_slicelength});
              auto _x = x.mutable_unchecked<2>();
 
