@@ -25,9 +25,9 @@ class Matrix {
 
   auto set(const Key& key, const double x) -> void {
     const auto& _key = ji_ ? Matrix::swap_key(key) : key;
-    i_ = std::max(std::get<0>(key), i_);
-    j_ = std::max(std::get<1>(key), j_);
-    data_->emplace(std::pair<Key, double>{_key, x});
+    i_ = std::max(std::get<0>(_key), i_);
+    j_ = std::max(std::get<1>(_key), j_);
+    data_->insert_or_assign(_key, x);
   }
 
   auto get(const Key& key) const -> double {
@@ -60,6 +60,10 @@ class Matrix {
       return std::make_tuple(j_ + 1, i_ + 1);
     }
     return std::make_tuple(i_ + 1, j_ + 1);
+  }
+
+  auto transpose() -> void {
+    ji_ = ! ji_;
   }
 
  private:

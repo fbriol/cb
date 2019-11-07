@@ -105,7 +105,8 @@ auto parse_tuple(const Matrix::Key& shape, const py::tuple& slices)
 PYBIND11_MODULE(core, m) {
   py::class_<Matrix>(m, "Matrix")
       .def(py::init<>())
-      .def("shape", &Matrix::shape)
+      .def("transpose", &Matrix::transpose)
+      .def_property_readonly("shape", &Matrix::shape)
       .def(
           "set",
           [](Matrix& self, py::array_t<uint32_t> i, py::array_t<uint32_t> j,
@@ -146,7 +147,7 @@ PYBIND11_MODULE(core, m) {
              for (size_t ix = 0; ix < i_slicelength; ++ix) {
                auto start = j_start;
                for (size_t jx = 0; jx < j_slicelength; ++jx) {
-                 self.set({i_start, j_start}, _x(ix, jx));
+                 self.set({i_start, start}, _x(ix, jx));
                  start += j_step;
                }
                i_start += i_step;
