@@ -105,6 +105,10 @@ if(NOT POW_FUNCTION_EXISTS)
   endif()
 endif()
 
+# Boost
+find_package(Boost 1.63 REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
 # Python
 find_package(PythonInterp REQUIRED)
 execute_process(

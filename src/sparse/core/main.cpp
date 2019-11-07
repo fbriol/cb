@@ -138,19 +138,31 @@ PYBIND11_MODULE(core, m) {
              }
              size_t i_start, i_stop, i_step, i_slicelength;
              size_t j_start, j_stop, j_step, j_slicelength;
+             std::cout << __LINE__ << std::endl;
              auto shape = self.shape();
 
+             std::cout << __LINE__ << std::endl;
+             auto i_slice = slices[0].cast<uint32_t>();
+
+
+             std::cout << __LINE__ << std::endl;
              if (!slices[0].cast<py::slice>().compute(
                      std::get<0>(shape), &i_start, &i_stop, &i_step,
                      &i_slicelength)) {
                throw py::error_already_set();
              }
 
+             std::cout << __LINE__ << std::endl;
              if (!slices[1].cast<py::slice>().compute(
                      std::get<1>(shape), &j_start, &j_stop, &j_step,
                      &j_slicelength)) {
                throw py::error_already_set();
              }
+             std::cout << __LINE__ << std::endl;
+             std::cout << i_start << "," << i_stop << "," << i_step << ","
+                       << i_slicelength << std::endl;
+             std::cout << j_start << "," << j_stop << "," << j_step << ","
+                       << j_slicelength << std::endl;
              auto x = py::array_t<double>({i_slicelength, j_slicelength});
              auto _x = x.mutable_unchecked<2>();
 

@@ -1,11 +1,24 @@
-#include <map>
+#include <boost/functional/hash.hpp>
+#include <unordered_map>
 #include <tuple>
 #include <memory>
+#include <string>
+
+namespace std {
+
+template <typename... T>
+struct hash<tuple<T...>> {
+  size_t operator()(tuple<T...> const& arg) const noexcept {
+    return boost::hash_value(arg);
+  }
+};
+
+}  // namespace std
 
 class Matrix {
  public:
   using Key = std::tuple<uint32_t, uint32_t>;
-  using Map = std::map<Key, double>;
+  using Map = std::unordered_map<Key, double>;
 
   Matrix() = default;
 
@@ -19,6 +32,18 @@ class Matrix {
   auto get(const Key& key) const -> double {
     const auto& _key = ji_ ? Matrix::swap_key(key) : key;
     if (data_->count(_key) == 0) {
+      auto i = std::get<0>(_key);
+      if (i > i_) {
+        throw std::range_error(
+            "index " + std::to_string(i) + " is out of bounds for axis " +
+            std::to_string(ji_ ? 1 : 0) + " with size " + std::to_string(i_));
+      }
+      auto j = std::get<1>(_key);
+      if (j > j_) {
+        throw std::range_error(
+            "index " + std::to_string(j) + " is out of bounds for axis " +
+            std::to_string(ji_ ? 0 : 1) + " with size " + std::to_string(j_));
+      }
       return 0;
     }
     return (*data_)[_key];
